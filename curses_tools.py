@@ -11,7 +11,7 @@ DOWN_KEY_CODE = 258
 
 
 def read_controls(canvas):
-    """Read keys pressed and returns tuple witl controls state."""
+    """Read keys pressed and returns tuple with controls state."""
 
     rows_direction = columns_direction = 0
     space_pressed = False
@@ -92,26 +92,25 @@ def get_frame_size(text):
     return rows, columns
 
 
-async def animate_spaceship(canvas, start_row, start_column):
-    row, column = start_row, start_column
+async def animate_spaceship(canvas,start_row,start_column):
+
     for _ in cycle(spaceship_1):
-        row,column,space = read_controls(canvas)
-        draw_frame(canvas, row, column, spaceship_1)
-        #row, column, space = read_controls(canvas)
+        row, column, space1 = read_controls(canvas)
+        start_row += row
+        start_column += column
+        draw_frame(canvas, start_row, start_column, spaceship_1)
         await asyncio.sleep(0)
-        # # стираем предыдущий кадр, прежде чем рисовать новый
-       # row, column, space = read_controls(canvas)
-        draw_frame(canvas,  row, column, spaceship_1, negative=True)
-        draw_frame(canvas,  row, column, spaceship_2)
+        draw_frame(canvas, start_row, start_column, spaceship_1, negative=True)
+        draw_frame(canvas, start_row, start_column, spaceship_2)
         await asyncio.sleep(0)
-        draw_frame(canvas,  row, column, spaceship_2, negative=True)
+        draw_frame(canvas, start_row, start_column, spaceship_2, negative=True)
 
 
 def draw(canvas):
     canvas.nodelay(True)
-    #max_row, max_column = canvas.getmaxyx()
-    start_row, start_column = canvas.getmaxyx()
-    coroutine_ship = animate_spaceship(canvas, start_row, start_column)
+    initial_row, initial_column = canvas.getmaxyx()
+    row, column = initial_row//3,initial_column//5
+    coroutine_ship = animate_spaceship(canvas, row, column)
     for _ in cycle(spaceship_1):
         coroutine_ship.send(None)
         canvas.refresh()
@@ -120,8 +119,9 @@ def draw(canvas):
 
 if __name__ == '__main__':
     curses.update_lines_cols()
-    #curses.wrapper(read_controls)
     curses.wrapper(draw)
+
+
 
 
 
