@@ -27,7 +27,7 @@ async def animate_spaceship(canvas,row,column):
     row_ship, column_ship = get_frame_size(spaceship_1)
     row_limit = row_frame-row_ship
     column_limit = column_frame-column_ship
-    for frame in cycle(spaceship_1):
+    for _ in cycle(spaceship_1):
         next_row,next_column,space = read_controls(canvas)
         current_row = row + next_row
         current_column = column + next_column
