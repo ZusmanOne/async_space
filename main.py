@@ -22,16 +22,22 @@ with open('animation/rocket_frame_2.txt','r') as content:
 
 
 async def animate_spaceship(canvas,row,column):
-    for _ in cycle(spaceship_1):
-        row_direct,column_direct,space = read_controls(canvas)
-        row += row_direct
-        column += column_direct
+    row,column = row//5, column//5
+    row_frame, column_frame = canvas.getmaxyx()
+    row_ship, column_ship = get_frame_size(spaceship_1)
+    row_limit = row_frame-row_ship
+    column_limit = column_frame-column_ship
+    for frame in cycle(spaceship_1):
+        next_row,next_column,space = read_controls(canvas)
+        current_row = row + next_row
+        current_column = column + next_column
+        if 0 <= current_row <= row_limit and 0 <= current_column <= column_limit:
+            row = current_row
+            column = current_column
         draw_frame(canvas, row, column, spaceship_1)
         await asyncio.sleep(0)
-        # # стираем предыдущий кадр, прежде чем рисовать новый
         draw_frame(canvas, row, column, spaceship_1, negative=True)
         draw_frame(canvas, row, column, spaceship_2)
-
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, spaceship_2, negative=True)
 
@@ -77,11 +83,11 @@ def draw(canvas):
     canvas.nodelay(True)
     rows_number, columns_number = canvas.getmaxyx()
     current_row = rows_number//3
-    cuurent_column = columns_number//5
-    coroutines_stars = [blink(canvas, random.randint(1, 9), random.randint(1, 180),
-                        *random.choices('+*.:')) for _ in range(100)]
-    coroutine_fire = fire(canvas, current_row, cuurent_column)
-    coroutine_ship = animate_spaceship(canvas,current_row,cuurent_column)
+    current_column = columns_number//5
+    coroutines_stars = [blink(canvas, random.randrange(rows_number), random.randrange(columns_number),
+                        *random.choices('+*.:')) for _ in range(200)]
+    coroutine_fire = fire(canvas, current_row, current_column)
+    coroutine_ship = animate_spaceship(canvas,rows_number,columns_number)
     while True:
         for coroutine in coroutines_stars.copy():
             try:
@@ -97,7 +103,7 @@ def draw(canvas):
             coroutine_fire.send(None)
             canvas.refresh()
         except StopIteration:
-            coroutine_fire = fire(canvas, current_row, cuurent_column)
+            coroutine_fire = fire(canvas, current_row, current_column)
             coroutine_fire.send(None)
             canvas.refresh()
         time.sleep(TIME_TIC)
