@@ -22,17 +22,18 @@ with open('animation/rocket_frame_2.txt', 'r') as content:
 
 
 async def animate_spaceship(canvas, row, column):
-    row,column = row//5, column//5
-    row_frame, column_frame = canvas.getmaxyx()
+    row, column = row//5, column//5
+    row_size, column_size = canvas.getmaxyx()
     row_ship, column_ship = get_frame_size(spaceship_1)
-    row_limit = row_frame-row_ship
-    column_limit = column_frame-column_ship
+    row_limit = row_size-row_ship
+    column_limit = column_size-column_ship
     for _ in cycle(spaceship_1):
         next_row,next_column,space = read_controls(canvas)
         current_row = row + next_row
         current_column = column + next_column
-        if 0 < current_row < row_limit and 0 < current_column < column_limit:
+        if 0 < current_row < row_limit:
             row = current_row
+        if 0 < current_column < column_limit:
             column = current_column
         draw_frame(canvas, row, column, spaceship_1)
         await asyncio.sleep(0)
@@ -53,8 +54,8 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
     row += rows_speed
     column += columns_speed
     symbol = '-' if columns_speed else '|'
-    rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
+    row_size, column_size = canvas.getmaxyx()
+    max_row, max_column = row_size - 1, column_size - 1
     curses.beep()
     while 0 < row < max_row and 0 < column < max_column:
         canvas.addstr(round(row), round(column), symbol)
@@ -83,13 +84,13 @@ async def blink(canvas, row, column, symbol,offset_tics):
 def draw(canvas):
     canvas.border()
     canvas.nodelay(True)
-    rows_number, columns_number = canvas.getmaxyx()
-    current_row = rows_number//3
-    current_column = columns_number//5
-    coroutines = [blink(canvas, random.randrange(rows_number), random.randrange(columns_number),
+    row_size, column_size = canvas.getmaxyx()
+    current_row = row_size//3
+    current_column = column_size//5
+    coroutines = [blink(canvas, random.randrange(row_size), random.randrange(column_size),
                         *random.choices('+*.:'), random.randint(1, 20)) for _ in range(200)]
     coroutines.append(fire(canvas, current_row, current_column))
-    coroutines.append(animate_spaceship(canvas, rows_number, columns_number))
+    coroutines.append(animate_spaceship(canvas, row_size, column_size))
     while True:
         for coroutine in coroutines.copy():
             try:
@@ -97,16 +98,8 @@ def draw(canvas):
             except StopIteration:
                 coroutines.remove(coroutine)
                 coroutines.append(fire(canvas, current_row, current_column))
-                #coroutine_fire.send(None)
             if len(coroutines) == 0:
                 break
-        # try:
-        #     coroutine_ship.send(None)
-        #     coroutine_fire.send(None)
-        #     #canvas.refresh()
-        # except StopIteration:
-        #     coroutine_fire = fire(canvas, current_row, current_column)
-        #     coroutine_fire.send(None)
         canvas.refresh()
         time.sleep(TIME_TIC)
 
