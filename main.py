@@ -14,14 +14,14 @@ UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
 
 
-with open('animation/rocket_frame_1.txt','r') as content:
+with open('animation/rocket_frame_1.txt', 'r') as content:
     spaceship_1=content.read()
 
-with open('animation/rocket_frame_2.txt','r') as content:
+with open('animation/rocket_frame_2.txt', 'r') as content:
     spaceship_2=content.read()
 
 
-async def animate_spaceship(canvas,row,column):
+async def animate_spaceship(canvas, row, column):
     row,column = row//5, column//5
     row_frame, column_frame = canvas.getmaxyx()
     row_ship, column_ship = get_frame_size(spaceship_1)
@@ -31,7 +31,7 @@ async def animate_spaceship(canvas,row,column):
         next_row,next_column,space = read_controls(canvas)
         current_row = row + next_row
         current_column = column + next_column
-        if 0 <= current_row <= row_limit and 0 <= current_column <= column_limit:
+        if 0 < current_row < row_limit and 0 < current_column < column_limit:
             row = current_row
             column = current_column
         draw_frame(canvas, row, column, spaceship_1)
@@ -47,7 +47,6 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
     row, column = start_row, start_column
     canvas.addstr(round(row), round(column), '*')
     await asyncio.sleep(0)
-
     canvas.addstr(round(row), round(column), 'O')
     await asyncio.sleep(0)
     canvas.addstr(round(row), round(column), ' ')
@@ -65,47 +64,50 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def blink(canvas, row, column, symbol):
+async def blink(canvas, row, column, symbol,offset_tics):
     while True:
-        for _ in range(random.randint(1, 20)):
-            canvas.addstr(row, column, symbol, curses.A_DIM)
+        canvas.addstr(row, column, symbol, curses.A_DIM)
+        for _ in range(offset_tics):
             await asyncio.sleep(0)
-        for _ in range(random.randint(1, 50)):
-            canvas.addstr(row, column, symbol)
+        canvas.addstr(row, column, symbol)
+        for _ in range(3):
             await asyncio.sleep(0)
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await asyncio.sleep(0)
+        for _ in range(5):
+            await asyncio.sleep(0)
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
+        for _ in range(3):
+            await asyncio.sleep(0)
 
 
 def draw(canvas):
+    canvas.border()
     canvas.nodelay(True)
     rows_number, columns_number = canvas.getmaxyx()
     current_row = rows_number//3
     current_column = columns_number//5
-    coroutines_stars = [blink(canvas, random.randrange(rows_number), random.randrange(columns_number),
-                        *random.choices('+*.:')) for _ in range(200)]
-    coroutine_fire = fire(canvas, current_row, current_column)
-    coroutine_ship = animate_spaceship(canvas,rows_number,columns_number)
+    coroutines = [blink(canvas, random.randrange(rows_number), random.randrange(columns_number),
+                        *random.choices('+*.:'), random.randint(1, 20)) for _ in range(200)]
+    coroutines.append(fire(canvas, current_row, current_column))
+    coroutines.append(animate_spaceship(canvas, rows_number, columns_number))
     while True:
-        for coroutine in coroutines_stars.copy():
+        for coroutine in coroutines.copy():
             try:
                 coroutine.send(None)
-                canvas.border()
-                canvas.refresh()
             except StopIteration:
-                coroutines_stars.remove(coroutine)
-            if len(coroutines_stars) == 0:
+                coroutines.remove(coroutine)
+                coroutines.append(fire(canvas, current_row, current_column))
+                #coroutine_fire.send(None)
+            if len(coroutines) == 0:
                 break
-        try:
-            coroutine_ship.send(None)
-            coroutine_fire.send(None)
-            canvas.refresh()
-        except StopIteration:
-            coroutine_fire = fire(canvas, current_row, current_column)
-            coroutine_fire.send(None)
-            canvas.refresh()
+        # try:
+        #     coroutine_ship.send(None)
+        #     coroutine_fire.send(None)
+        #     #canvas.refresh()
+        # except StopIteration:
+        #     coroutine_fire = fire(canvas, current_row, current_column)
+        #     coroutine_fire.send(None)
+        canvas.refresh()
         time.sleep(TIME_TIC)
 
 
@@ -114,6 +116,7 @@ if __name__ == '__main__':
     curses.update_lines_cols()
     curses.wrapper(draw)
     curses.curs_set(False)
+
 
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
